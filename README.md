@@ -1,61 +1,67 @@
-# AssetFlow
+# AssetFlow — Enterprise Asset & Resource Management
 
-A React + FastAPI + SQLite starter for the AssetFlow ERP concept.
+A role-based ERP for tracking assets and booking shared resources.
+Stack: **React + Vite** (frontend) · **FastAPI + SQLAlchemy + SQLite** (backend) · **JWT + bcrypt** auth.
 
-## Project structure
+## Roles & access
 
-- backend/ - FastAPI API and SQLite-backed starter app
-- frontend/ - React + Vite frontend
-- README.md - setup and run instructions
+Roles are **never self-assigned**. Signup always creates a plain **Employee**;
+an **Admin** promotes people to **Department Head** or **Asset Manager** from the
+Employee Directory. Access is enforced on every API route.
 
-## Backend
+| Capability                        | Employee | Asset Manager / Dept Head | Admin |
+|-----------------------------------|:--------:|:-------------------------:|:-----:|
+| View dashboard, assets, bookings  | ✔ | ✔ | ✔ |
+| Book resources, request transfers | ✔ | ✔ | ✔ |
+| Register/edit assets, allocate    |   | ✔ | ✔ |
+| Approve/reject transfers, returns |   | ✔ | ✔ |
+| Organization Setup (master data)  |   |   | ✔ |
 
-1. Open PowerShell in the backend folder.
-2. Create or activate the virtual environment.
-3. Install dependencies.
-4. Start the API server.
+## Demo accounts
 
-Example:
+| Role          | Email                  | Password      |
+|---------------|------------------------|---------------|
+| Admin         | admin@assetflow.com    | `admin123`    |
+| Asset Manager | priya@assetflow.com    | `password123` |
+| Department Head | raj@assetflow.com    | `password123` |
+| Employee      | meera@assetflow.com    | `password123` |
 
-```powershell
+The predefined admin and demo data are seeded automatically on first run.
+
+## Features (core 6)
+
+1. **Login / Signup** — JWT auth; signup creates Employee only.
+2. **Dashboard** — KPI cards, overdue vs. upcoming returns, lifecycle breakdown.
+3. **Organization Setup** (admin) — Departments, Asset Categories, Employee Directory (role assignment).
+4. **Asset Directory** — register with auto tag (AF-0001), search/filter, per-asset allocation history, full lifecycle (Available → Allocated → … → Disposed).
+5. **Allocation & Transfer** — conflict rule blocks double-allocation and offers a transfer request; approval re-allocates; return flow with condition check-in.
+6. **Resource Booking** — time-slot booking with overlap rejection (adjacent slots allowed).
+
+## Run
+
+### Backend (Python 3.9)
+
+```bash
 cd backend
-py -3.9 -m venv .venv
-.\.venv\Scripts\Activate.ps1
-python -m pip install --upgrade pip
-pip install fastapi uvicorn pydantic
-python -m uvicorn app.simple_main:app --app-dir . --host 127.0.0.1 --port 8000
+python3.9 -m venv .venv           # if not already created
+.venv/bin/pip install -r requirements.txt
+PYTHONPATH=. .venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000
 ```
 
-The API exposes:
-- GET /health
-- POST /auth/login
+API at http://127.0.0.1:8000 · interactive docs at http://127.0.0.1:8000/docs
 
-## Frontend
+### Frontend
 
-1. Open PowerShell in the frontend folder.
-2. Install dependencies.
-3. Start the dev server.
-
-Example:
-
-```powershell
+```bash
 cd frontend
 npm install
 npm run dev
 ```
 
-Then open http://127.0.0.1:5173.
+Open http://127.0.0.1:5173.
 
-## Current milestone
+## Notes
 
-The starter includes:
-- a backend API shell with an auth login route
-- a React app with a login page and a protected dashboard page
-- a simple login flow that redirects to the dashboard after successful authentication
-
-Use the demo credentials:
-- Email: any non-empty value
-- Password: any non-empty value
-
-The next step will be to expand the app with the full business modules and database models.
-use python3.9
+- SQLite DB (`backend/assetflow.db`) is created and seeded on first startup. Delete it to reset to fresh demo data.
+- `bcrypt` is pinned to `4.0.1` for compatibility with `passlib` 1.7.4.
+- CORS is open to the Vite dev origin (`localhost:5173`).
