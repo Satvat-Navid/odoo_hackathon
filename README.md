@@ -1,1 +1,1 @@
-"# odoo_hackathon" 
+# Odoo Hackathon
