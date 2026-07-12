@@ -11,6 +11,7 @@ import MaintenancePage from './pages/MaintenancePage';
 import AuditPage from './pages/AuditPage';
 import ReportsPage from './pages/ReportsPage';
 import ActivityPage from './pages/ActivityPage';
+import SettingsPage from './pages/SettingsPage';
 
 function ProtectedRoute({ children, adminOnly = false, managerOnly = false }) {
   const { isAuthenticated, isAdmin, isManager, loading } = useAuth();
@@ -39,6 +40,7 @@ export default function App() {
             <Route path="/assets" element={<AssetsPage />} />
             <Route path="/allocations" element={<AllocationPage />} />
             <Route path="/bookings" element={<BookingPage />} />
+            <Route path="/settings" element={<SettingsPage />} />
             <Route path="/maintenance" element={<MaintenancePage />} />
             <Route path="/audit" element={<AuditPage />} />
             <Route

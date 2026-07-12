@@ -15,6 +15,9 @@ const NAV = [
   { to: '/activity', label: 'Activity Log', icon: '🕑', managerOnly: true },
   { to: '/organization', label: 'Organization Setup', icon: '⚙', adminOnly: true },
 ];
+const FOOTER_NAV = [
+  { to: '/settings', label: 'Settings', icon: '⚙' },
+];
 
 export default function Layout() {
   const { user, isAdmin, isManager, logout } = useAuth();
@@ -70,6 +73,14 @@ export default function Layout() {
         </nav>
 
         <div className="sidebar-foot">
+          <div className="footer-nav">
+            {FOOTER_NAV.map((item) => (
+              <NavLink key={item.to} to={item.to} className="nav-link footer-link" onClick={() => setMobileOpen(false)}>
+                <span className="nav-icon">{item.icon}</span>
+                {item.label}
+              </NavLink>
+            ))}
+          </div>
           <div className="user-chip">
             <span className="avatar">{initials}</span>
             <div className="user-meta">

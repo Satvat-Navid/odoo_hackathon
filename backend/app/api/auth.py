@@ -55,6 +55,14 @@ def me(current_user: models.Employee = Depends(get_current_user)):
     return employee_out(current_user)
 
 
+@router.patch("/me", response_model=schemas.EmployeeOut)
+def update_me(payload: schemas.EmployeeSelfUpdate, db: Session = Depends(get_db), current=Depends(get_current_user)):
+    current.full_name = payload.full_name
+    db.commit()
+    db.refresh(current)
+    return employee_out(current)
+
+
 @router.post("/forgot-password", response_model=schemas.ForgotPasswordResponse)
 def forgot_password(payload: schemas.ForgotPasswordRequest, db: Session = Depends(get_db)):
     """Issue a one-time reset token. Demo-safe: the token is returned in the

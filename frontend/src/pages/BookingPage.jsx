@@ -108,8 +108,8 @@ function RescheduleModal({ booking, onClose, onDone, onError }) {
     e.preventDefault();
     try {
       await rescheduleBooking(booking.id, {
-        start_time: new Date(form.start_time).toISOString(),
-        end_time: new Date(form.end_time).toISOString(),
+        start_time: form.start_time,
+        end_time: form.end_time,
       });
       onDone();
     } catch (err) { onError(err.message); }
@@ -144,8 +144,8 @@ function BookingModal({ resources, onClose, onDone, onError }) {
       await createBooking({
         resource_name: form.resource_name,
         asset_id: form.asset_id ? Number(form.asset_id) : null,
-        start_time: new Date(form.start_time).toISOString(),
-        end_time: new Date(form.end_time).toISOString(),
+        start_time: form.start_time,
+        end_time: form.end_time,
         purpose: form.purpose || null,
       });
       onDone();

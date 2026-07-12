@@ -39,6 +39,7 @@ export const login = (email, password) =>
 export const register = (full_name, email, password) =>
   request('/auth/register', { method: 'POST', body: { full_name, email, password }, auth: false });
 export const fetchMe = () => request('/auth/me');
+export const updateMe = (payload) => request('/auth/me', { method: 'PATCH', body: payload });
 export const forgotPassword = (email) =>
   request('/auth/forgot-password', { method: 'POST', body: { email }, auth: false });
 export const resetPassword = (token, new_password) =>

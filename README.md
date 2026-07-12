@@ -36,7 +36,7 @@ org-wide access.
 
 The predefined admin and demo data are seeded automatically on first run.
 
-## Features (core 6)
+## Features
 
 1. **Login / Signup** — JWT auth; signup creates Employee only.
 2. **Dashboard** — KPI cards, overdue vs. upcoming returns, lifecycle breakdown.
@@ -45,12 +45,8 @@ The predefined admin and demo data are seeded automatically on first run.
 5. **Allocation & Transfer** — conflict rule blocks double-allocation and offers a transfer request; approval re-allocates; return flow with condition check-in.
 6. **Resource Booking** — time-slot booking with overlap rejection (adjacent slots allowed), plus **reschedule** and pre-slot **reminder** alerts.
 
-## Features (Part 1 — Maintenance & Audit)
-
 7. **Maintenance** — full repair workflow (Pending → Approved/Rejected → Technician Assigned → In Progress → Resolved); requesters are notified at each decision.
 8. **Asset Audit** — audit cycles scoped by department/location/all; assigned auditors record Verified/Missing/Damaged; discrepancies alert admins and apply to assets on close.
-
-## Features (Part 2 — Analytics, Logs & Notifications)
 
 9. **Reports & Analytics** (Managers/Admin) — headline KPI cards plus dependency-free charts:
    - **Asset utilization** — days allocated & times allocated per asset; most-used vs. idle.
@@ -68,25 +64,6 @@ The predefined admin and demo data are seeded automatically on first run.
 - **Forgot / reset password** — `POST /auth/forgot-password` returns a one-time `reset_token` (demo-safe: it would be emailed in production), then `POST /auth/reset-password` sets a new password. Reachable from the login screen via **Forgot password?**.
 - **Department allocation** — an asset can be allocated to a **department** (not only an employee); the department head is notified.
 - **Asset media & QR** — assets carry an optional **photo URL** and **documents** field; the **Details** dialog shows a **QR code** of the asset tag.
-
-## New endpoints (Part 2)
-
-```
-GET  /notifications                 (own; ?unread_only=true)
-GET  /notifications/unread-count
-POST /notifications/{id}/read
-POST /notifications/read-all
-GET  /activity-logs                 (manager/admin; ?entity_type= &actor_id= &limit=)
-GET  /reports/summary
-GET  /reports/asset-utilization
-GET  /reports/maintenance-frequency
-GET  /reports/due-maintenance
-GET  /reports/department-allocation
-GET  /reports/booking-heatmap
-POST /bookings/{id}/reschedule
-POST /auth/forgot-password
-POST /auth/reset-password
-```
 
 ## Run
 
@@ -110,11 +87,3 @@ npm run dev
 ```
 
 Open http://127.0.0.1:5173.
-
-## Notes
-
-- SQLite DB (`backend/assetflow.db`) is created and seeded on first startup. Delete it to reset to fresh demo data — **required after pulling Part 2**, since new tables/columns (notifications, activity logs, allocation department target, asset photo/QR) are added. The seed now includes historical allocations, spread-out bookings, and sample notifications so Reports render non-empty.
-- `bcrypt` is pinned to `4.0.1` for compatibility with `passlib` 1.7.4.
-- Code targets **Python 3.9** (uses `typing.Optional`, never `X | None` in evaluated annotations).
-- Reports charts are **dependency-free** (inline CSS bars + SVG-style grid); the asset QR uses a public QR image endpoint keyed on the asset tag.
-- CORS is open to the Vite dev origin (`localhost:5173`).

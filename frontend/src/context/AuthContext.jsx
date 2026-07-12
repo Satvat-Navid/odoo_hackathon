@@ -42,6 +42,12 @@ export function AuthProvider({ children }) {
     setUser(null);
   };
 
+  const refreshUser = async () => {
+    const data = await fetchMe();
+    setUser(data);
+    return data;
+  };
+
   const value = useMemo(
     () => ({
       user,
@@ -51,6 +57,7 @@ export function AuthProvider({ children }) {
       isManager: MANAGER_ROLES.includes(user?.role),
       login,
       logout,
+      refreshUser,
     }),
     [user, loading]
   );

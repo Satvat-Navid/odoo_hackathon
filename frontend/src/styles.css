@@ -313,9 +313,12 @@ textarea { resize: vertical; }
 .brand-bell { margin-left: auto; }
 .topbar-spacer { flex: 1; }
 .notif-panel {
-  position: absolute; right: 0; top: calc(100% + 8px); width: 320px; max-width: 86vw;
+  position: absolute; left: 0; right: auto; top: calc(100% + 8px); width: 320px; max-width: 86vw;
   background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
   box-shadow: var(--shadow); z-index: 60; overflow: hidden;
+}
+.topbar .notif-panel {
+  right: 0; left: auto;
 }
 .notif-head { display: flex; justify-content: space-between; align-items: center; padding: 12px 14px; border-bottom: 1px solid var(--border); }
 .notif-list { max-height: 360px; overflow-y: auto; display: flex; flex-direction: column; }

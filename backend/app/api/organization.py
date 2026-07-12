@@ -122,8 +122,12 @@ def delete_category(cat_id: int, db: Session = Depends(get_db), _=Depends(requir
 
 # --- Employee directory -------------------------------------------------------
 @router.get("/employees", response_model=list[schemas.EmployeeOut])
-def list_employees(db: Session = Depends(get_db), _=Depends(get_current_user)):
-    return [employee_out(e) for e in db.query(models.Employee).all()]
+def list_employees(db: Session = Depends(get_db), current=Depends(get_current_user)):
+    if current.role != ROLE_EMPLOYEE:
+        employees = db.query(models.Employee).all()
+    else:
+        employees = [current]
+    return [employee_out(e) for e in employees]
 
 
 @router.post("/employees", response_model=schemas.EmployeeOut, status_code=201)

@@ -114,6 +114,10 @@ class EmployeeUpdate(BaseModel):
     status: Optional[str] = None
 
 
+class EmployeeSelfUpdate(BaseModel):
+    full_name: str
+
+
 # --- Assets -------------------------------------------------------------------
 class AssetCreate(BaseModel):
     name: str
