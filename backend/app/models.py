@@ -122,6 +122,10 @@ class Booking(Base):
 
 
 class MaintenanceRequest(Base):
+    """Full repair workflow:
+    Pending -> Approved/Rejected -> Technician Assigned -> In Progress -> Resolved.
+    """
+
     __tablename__ = "maintenance_requests"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -130,6 +134,66 @@ class MaintenanceRequest(Base):
     description = Column(String(250), nullable=False)
     priority = Column(String(20), default="Medium")
     status = Column(String(20), default="Pending")
+    technician_name = Column(String(120), nullable=True)
+    approved_by_id = Column(Integer, ForeignKey("employees.id"), nullable=True)
+    resolution_notes = Column(Text, nullable=True)
+    photo_url = Column(String(500), nullable=True)
     created_at = Column(DateTime, default=_utcnow)
+    updated_at = Column(DateTime, default=_utcnow, onupdate=_utcnow)
 
     asset = relationship("Asset")
+    approved_by = relationship("Employee", foreign_keys=[approved_by_id])
+
+
+class AuditCycle(Base):
+    """An audit campaign over a scoped set of assets. Open -> Closed."""
+
+    __tablename__ = "audit_cycles"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(120), nullable=False)
+    scope_type = Column(String(20), default="All")  # Department | Location | All
+    scope_value = Column(String(120), nullable=True)
+    start_date = Column(Date, nullable=True)
+    end_date = Column(Date, nullable=True)
+    status = Column(String(20), default="Open")  # Open | Closed
+    created_by_id = Column(Integer, ForeignKey("employees.id"), nullable=True)
+    created_at = Column(DateTime, default=_utcnow)
+    closed_at = Column(DateTime, nullable=True)
+
+    created_by = relationship("Employee", foreign_keys=[created_by_id])
+    assignments = relationship(
+        "AuditAssignment", back_populates="cycle", cascade="all, delete-orphan"
+    )
+    items = relationship("AuditItem", back_populates="cycle", cascade="all, delete-orphan")
+
+
+class AuditAssignment(Base):
+    """An auditor assigned to verify items in a cycle."""
+
+    __tablename__ = "audit_assignments"
+
+    id = Column(Integer, primary_key=True, index=True)
+    cycle_id = Column(Integer, ForeignKey("audit_cycles.id"), nullable=False)
+    auditor_id = Column(Integer, ForeignKey("employees.id"), nullable=False)
+
+    cycle = relationship("AuditCycle", back_populates="assignments")
+    auditor = relationship("Employee", foreign_keys=[auditor_id])
+
+
+class AuditItem(Base):
+    """One asset to be verified within a cycle."""
+
+    __tablename__ = "audit_items"
+
+    id = Column(Integer, primary_key=True, index=True)
+    cycle_id = Column(Integer, ForeignKey("audit_cycles.id"), nullable=False)
+    asset_id = Column(Integer, ForeignKey("assets.id"), nullable=False)
+    result = Column(String(20), default="Pending")  # Pending | Verified | Missing | Damaged
+    notes = Column(String(250), nullable=True)
+    checked_by_id = Column(Integer, ForeignKey("employees.id"), nullable=True)
+    checked_at = Column(DateTime, nullable=True)
+
+    cycle = relationship("AuditCycle", back_populates="items")
+    asset = relationship("Asset")
+    checked_by = relationship("Employee", foreign_keys=[checked_by_id])

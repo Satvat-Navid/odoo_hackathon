@@ -21,6 +21,17 @@ const STATUS_CLASS = {
   Good: 'ok',
   Fair: 'warn',
   Poor: 'danger',
+  // Maintenance workflow
+  Pending: 'warn',
+  'Technician Assigned': 'info',
+  'In Progress': 'info',
+  Resolved: 'ok',
+  // Audit
+  Open: 'info',
+  Closed: 'muted',
+  Verified: 'ok',
+  Missing: 'danger',
+  Damaged: 'warn',
 };
 
 export function Badge({ value }) {

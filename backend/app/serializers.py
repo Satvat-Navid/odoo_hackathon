@@ -113,3 +113,81 @@ def booking_out(bk: models.Booking) -> dict:
         "purpose": bk.purpose,
         "status": bk.status,
     }
+
+
+def maintenance_out(mr: models.MaintenanceRequest) -> dict:
+    return {
+        "id": mr.id,
+        "asset_id": mr.asset_id,
+        "asset_tag": mr.asset.asset_tag if mr.asset else None,
+        "asset_name": mr.asset.name if mr.asset else None,
+        "requester_name": mr.requester_name,
+        "description": mr.description,
+        "priority": mr.priority,
+        "status": mr.status,
+        "technician": mr.technician_name,
+        "approved_by": mr.approved_by.full_name if mr.approved_by else None,
+        "resolution_notes": mr.resolution_notes,
+        "photo_url": mr.photo_url,
+        "created_at": mr.created_at,
+        "updated_at": mr.updated_at,
+    }
+
+
+def audit_item_out(item: models.AuditItem) -> dict:
+    return {
+        "id": item.id,
+        "cycle_id": item.cycle_id,
+        "asset_id": item.asset_id,
+        "asset_tag": item.asset.asset_tag if item.asset else None,
+        "asset_name": item.asset.name if item.asset else None,
+        "result": item.result,
+        "notes": item.notes,
+        "checked_by": item.checked_by.full_name if item.checked_by else None,
+        "checked_at": item.checked_at,
+    }
+
+
+def _audit_counts(cycle: models.AuditCycle) -> dict:
+    total = len(cycle.items)
+    verified = sum(1 for i in cycle.items if i.result == "Verified")
+    missing = sum(1 for i in cycle.items if i.result == "Missing")
+    damaged = sum(1 for i in cycle.items if i.result == "Damaged")
+    pending = sum(1 for i in cycle.items if i.result == "Pending")
+    checked = total - pending
+    return {
+        "total_items": total,
+        "verified": verified,
+        "missing": missing,
+        "damaged": damaged,
+        "pending": pending,
+        "progress_pct": round(checked / total * 100) if total else 0,
+    }
+
+
+def audit_cycle_out(cycle: models.AuditCycle) -> dict:
+    return {
+        "id": cycle.id,
+        "name": cycle.name,
+        "scope_type": cycle.scope_type,
+        "scope_value": cycle.scope_value,
+        "start_date": cycle.start_date,
+        "end_date": cycle.end_date,
+        "status": cycle.status,
+        "created_by": cycle.created_by.full_name if cycle.created_by else None,
+        "created_at": cycle.created_at,
+        "closed_at": cycle.closed_at,
+        **_audit_counts(cycle),
+    }
+
+
+def audit_cycle_detail(cycle: models.AuditCycle) -> dict:
+    data = audit_cycle_out(cycle)
+    data["auditors"] = [
+        {"id": a.auditor_id, "name": a.auditor.full_name if a.auditor else None}
+        for a in cycle.assignments
+    ]
+    data["items"] = [
+        audit_item_out(i) for i in sorted(cycle.items, key=lambda x: x.id)
+    ]
+    return data

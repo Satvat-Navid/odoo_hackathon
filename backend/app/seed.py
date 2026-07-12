@@ -108,4 +108,31 @@ def seed(db: Session) -> None:
         purpose="Sprint planning", status="Upcoming",
     ))
 
+    # Maintenance requests in different workflow states
+    db.add(models.MaintenanceRequest(
+        asset_id=assets[2].id, requester_name=meera.full_name,
+        description="Chair hydraulics failing, seat drops randomly.",
+        priority="High", status="Pending",
+    ))
+    projector = assets[5]  # Approved -> asset goes Under Maintenance
+    projector.status = "Under Maintenance"
+    db.add(models.MaintenanceRequest(
+        asset_id=projector.id, requester_name=raj.full_name,
+        description="Projector lamp flickering during presentations.",
+        priority="Medium", status="Approved", approved_by_id=priya.id,
+    ))
+
+    # An Open audit cycle scoped to IT, with an assigned auditor + generated items
+    cycle = models.AuditCycle(
+        name="Q3 IT Asset Audit", scope_type="Department", scope_value="IT",
+        start_date=date.today(), end_date=date.today() + timedelta(days=14),
+        status="Open", created_by_id=admin.id,
+    )
+    db.add(cycle)
+    db.flush()
+    db.add(models.AuditAssignment(cycle_id=cycle.id, auditor_id=meera.id))
+    for asset in assets:
+        if asset.department_id == it.id:
+            db.add(models.AuditItem(cycle_id=cycle.id, asset_id=asset.id, result="Pending"))
+
     db.commit()

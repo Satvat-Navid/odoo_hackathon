@@ -42,7 +42,11 @@ def kpis(db: Session = Depends(get_db), _=Depends(get_current_user)):
     )
     maintenance_today = (
         db.query(models.MaintenanceRequest)
-        .filter(models.MaintenanceRequest.status.in_(["Pending", "Approved", "In Progress"]))
+        .filter(
+            models.MaintenanceRequest.status.in_(
+                ["Pending", "Approved", "Technician Assigned", "In Progress"]
+            )
+        )
         .count()
     )
 

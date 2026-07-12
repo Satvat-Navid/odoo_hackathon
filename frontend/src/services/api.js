@@ -68,6 +68,7 @@ export const registerAsset = (payload) => request('/assets', { method: 'POST', b
 export const updateAsset = (id, payload) => request(`/assets/${id}`, { method: 'PATCH', body: payload });
 export const deleteAsset = (id) => request(`/assets/${id}`, { method: 'DELETE' });
 export const fetchAssetHistory = (id) => request(`/assets/${id}/history`);
+export const fetchAssetMaintenanceHistory = (id) => request(`/assets/${id}/maintenance-history`);
 
 // --- Allocations & transfers --------------------------------------------------
 export const fetchAllocations = (status) => request(`/allocations${status ? `?status=${status}` : ''}`);
@@ -83,3 +84,22 @@ export const rejectTransfer = (id) => request(`/transfers/${id}/reject`, { metho
 export const fetchBookings = (resource) => request(`/bookings${resource ? `?resource=${encodeURIComponent(resource)}` : ''}`);
 export const createBooking = (payload) => request('/bookings', { method: 'POST', body: payload });
 export const cancelBooking = (id) => request(`/bookings/${id}/cancel`, { method: 'POST' });
+
+// --- Maintenance --------------------------------------------------------------
+export const fetchMaintenanceRequests = (status) =>
+  request(`/maintenance-requests${status ? `?status=${encodeURIComponent(status)}` : ''}`);
+export const raiseMaintenanceRequest = (payload) => request('/maintenance-requests', { method: 'POST', body: payload });
+export const approveMaintenance = (id) => request(`/maintenance-requests/${id}/approve`, { method: 'POST' });
+export const rejectMaintenance = (id) => request(`/maintenance-requests/${id}/reject`, { method: 'POST' });
+export const assignMaintenance = (id, technician) => request(`/maintenance-requests/${id}/assign`, { method: 'POST', body: { technician } });
+export const startMaintenance = (id) => request(`/maintenance-requests/${id}/start`, { method: 'POST' });
+export const resolveMaintenance = (id, resolution_notes) => request(`/maintenance-requests/${id}/resolve`, { method: 'POST', body: { resolution_notes } });
+
+// --- Asset audit --------------------------------------------------------------
+export const fetchAuditCycles = () => request('/audit-cycles');
+export const fetchAuditCycle = (id) => request(`/audit-cycles/${id}`);
+export const createAuditCycle = (payload) => request('/audit-cycles', { method: 'POST', body: payload });
+export const assignAuditors = (id, auditor_ids) => request(`/audit-cycles/${id}/auditors`, { method: 'POST', body: { auditor_ids } });
+export const updateAuditItem = (id, payload) => request(`/audit-items/${id}`, { method: 'PATCH', body: payload });
+export const fetchAuditDiscrepancies = (id) => request(`/audit-cycles/${id}/discrepancies`);
+export const closeAuditCycle = (id) => request(`/audit-cycles/${id}/close`, { method: 'POST' });

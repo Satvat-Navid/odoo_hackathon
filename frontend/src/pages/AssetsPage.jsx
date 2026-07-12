@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import {
-  deleteAsset, fetchAssetHistory, fetchAssets, fetchCategories, fetchDepartments, registerAsset,
+  deleteAsset, fetchAssetHistory, fetchAssetMaintenanceHistory, fetchAssets, fetchCategories,
+  fetchDepartments, registerAsset,
 } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import PageHeader from '../components/PageHeader';
@@ -27,8 +28,11 @@ export default function AssetsPage() {
 
   const openHistory = async (asset) => {
     try {
-      const rows = await fetchAssetHistory(asset.id);
-      setHistory({ asset, rows });
+      const [rows, maintenance] = await Promise.all([
+        fetchAssetHistory(asset.id),
+        fetchAssetMaintenanceHistory(asset.id),
+      ]);
+      setHistory({ asset, rows, maintenance });
     } catch (e) { setError(e.message); }
   };
 
@@ -95,6 +99,7 @@ export default function AssetsPage() {
 
       {history && (
         <Modal title={`History — ${history.asset.asset_tag} ${history.asset.name}`} onClose={() => setHistory(null)}>
+          <h4 className="history-section">Allocation History</h4>
           {history.rows.length === 0 ? <EmptyState>No allocation history yet.</EmptyState> : (
             <table className="table">
               <thead><tr><th>Holder</th><th>Allocated</th><th>Expected return</th><th>Returned</th><th>Status</th></tr></thead>
@@ -106,6 +111,24 @@ export default function AssetsPage() {
                     <td>{h.expected_return_date || '—'}</td>
                     <td>{h.returned_date ? new Date(h.returned_date).toLocaleDateString() : '—'}</td>
                     <td><Badge value={h.status} /></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+
+          <h4 className="history-section">Maintenance History</h4>
+          {(!history.maintenance || history.maintenance.length === 0) ? <EmptyState>No maintenance history yet.</EmptyState> : (
+            <table className="table">
+              <thead><tr><th>Requested by</th><th>Description</th><th>Priority</th><th>Technician</th><th>Status</th></tr></thead>
+              <tbody>
+                {history.maintenance.map((m) => (
+                  <tr key={m.id}>
+                    <td>{m.requester_name}</td>
+                    <td>{m.description}</td>
+                    <td><Badge value={m.priority} /></td>
+                    <td>{m.technician || '—'}</td>
+                    <td><Badge value={m.status} /></td>
                   </tr>
                 ))}
               </tbody>

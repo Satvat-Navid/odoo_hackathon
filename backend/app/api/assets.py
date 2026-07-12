@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from .. import models, schemas
 from ..database import get_db
 from ..security import get_current_user, require_manager
-from ..serializers import allocation_out, asset_out
+from ..serializers import allocation_out, asset_out, maintenance_out
 
 router = APIRouter(prefix="/assets", tags=["assets"])
 
@@ -114,3 +114,16 @@ def asset_history(asset_id: int, db: Session = Depends(get_db), _=Depends(get_cu
         .all()
     )
     return [allocation_out(a) for a in allocations]
+
+
+@router.get("/{asset_id}/maintenance-history", response_model=list[schemas.MaintenanceOut])
+def asset_maintenance_history(
+    asset_id: int, db: Session = Depends(get_db), _=Depends(get_current_user)
+):
+    rows = (
+        db.query(models.MaintenanceRequest)
+        .filter(models.MaintenanceRequest.asset_id == asset_id)
+        .order_by(models.MaintenanceRequest.id.desc())
+        .all()
+    )
+    return [maintenance_out(m) for m in rows]

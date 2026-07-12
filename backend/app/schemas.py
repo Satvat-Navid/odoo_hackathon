@@ -218,4 +218,95 @@ class BookingOut(BaseModel):
         from_attributes = True
 
 
+# --- Maintenance --------------------------------------------------------------
+class MaintenanceCreate(BaseModel):
+    asset_id: int
+    description: str
+    priority: str = "Medium"
+    photo_url: Optional[str] = None
+
+
+class MaintenanceAssign(BaseModel):
+    technician: str
+
+
+class MaintenanceResolve(BaseModel):
+    resolution_notes: Optional[str] = None
+
+
+class MaintenanceOut(BaseModel):
+    id: int
+    asset_id: Optional[int] = None
+    asset_tag: Optional[str] = None
+    asset_name: Optional[str] = None
+    requester_name: str
+    description: str
+    priority: str
+    status: str
+    technician: Optional[str] = None
+    approved_by: Optional[str] = None
+    resolution_notes: Optional[str] = None
+    photo_url: Optional[str] = None
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+
+# --- Asset audit --------------------------------------------------------------
+class AuditCycleCreate(BaseModel):
+    name: str
+    scope_type: str = "All"  # Department | Location | All
+    scope_value: Optional[str] = None
+    start_date: Optional[date] = None
+    end_date: Optional[date] = None
+
+
+class AuditorsAssign(BaseModel):
+    auditor_ids: list[int]
+
+
+class AuditItemUpdate(BaseModel):
+    result: str  # Verified | Missing | Damaged | Pending
+    notes: Optional[str] = None
+
+
+class AuditItemOut(BaseModel):
+    id: int
+    cycle_id: int
+    asset_id: int
+    asset_tag: Optional[str] = None
+    asset_name: Optional[str] = None
+    result: str
+    notes: Optional[str] = None
+    checked_by: Optional[str] = None
+    checked_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+
+class AuditCycleOut(BaseModel):
+    id: int
+    name: str
+    scope_type: str
+    scope_value: Optional[str] = None
+    start_date: Optional[date] = None
+    end_date: Optional[date] = None
+    status: str
+    created_by: Optional[str] = None
+    created_at: Optional[datetime] = None
+    closed_at: Optional[datetime] = None
+    total_items: int = 0
+    verified: int = 0
+    missing: int = 0
+    damaged: int = 0
+    pending: int = 0
+    progress_pct: int = 0
+
+    class Config:
+        from_attributes = True
+
+
 TokenResponse.model_rebuild()

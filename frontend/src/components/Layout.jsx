@@ -8,6 +8,8 @@ const NAV = [
   { to: '/assets', label: 'Assets', icon: '▤' },
   { to: '/allocations', label: 'Allocation & Transfer', icon: '⇄' },
   { to: '/bookings', label: 'Resource Booking', icon: '◷' },
+  { to: '/maintenance', label: 'Maintenance', icon: '⚒' },
+  { to: '/audit', label: 'Asset Audit', icon: '☑' },
   { to: '/organization', label: 'Organization Setup', icon: '⚙', adminOnly: true },
 ];
 

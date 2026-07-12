@@ -222,6 +222,8 @@ textarea { resize: vertical; }
 /* ---- Empty / hints / banners --------------------------------------------- */
 .empty-state { padding: 32px 20px; text-align: center; color: var(--muted); }
 .hint-text { color: var(--muted); font-size: 0.8rem; margin: 12px 0 0; }
+.history-section { margin: 20px 0 10px; font-size: 0.9rem; font-weight: 700; color: var(--primary-dark); }
+.history-section:first-child { margin-top: 0; }
 .banner { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 11px 16px; border-radius: var(--radius-sm); font-size: 0.875rem; font-weight: 500; }
 .banner-error { background: #fce4e3; color: #b91c1c; border: 1px solid #f6bcb8; }
 .banner-success { background: var(--primary-tint); color: var(--primary-dark); border: 1px solid var(--primary-tint-2); }

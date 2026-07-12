@@ -7,6 +7,8 @@ import OrgSetupPage from './pages/OrgSetupPage';
 import AssetsPage from './pages/AssetsPage';
 import AllocationPage from './pages/AllocationPage';
 import BookingPage from './pages/BookingPage';
+import MaintenancePage from './pages/MaintenancePage';
+import AuditPage from './pages/AuditPage';
 
 function ProtectedRoute({ children, adminOnly = false }) {
   const { isAuthenticated, isAdmin, loading } = useAuth();
@@ -34,6 +36,8 @@ export default function App() {
             <Route path="/assets" element={<AssetsPage />} />
             <Route path="/allocations" element={<AllocationPage />} />
             <Route path="/bookings" element={<BookingPage />} />
+            <Route path="/maintenance" element={<MaintenancePage />} />
+            <Route path="/audit" element={<AuditPage />} />
             <Route
               path="/organization"
               element={

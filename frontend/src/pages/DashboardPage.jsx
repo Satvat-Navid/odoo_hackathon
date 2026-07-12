@@ -24,6 +24,7 @@ export default function DashboardPage() {
         actions={
           <div className="page-actions">
             {isManager && <Link className="btn btn-primary" to="/assets">Register Asset</Link>}
+            <Link className="btn btn-outline" to="/maintenance">Raise Maintenance Request</Link>
             <Link className="btn btn-outline" to="/bookings">Book Resource</Link>
           </div>
         }
@@ -39,6 +40,7 @@ export default function DashboardPage() {
             <KpiCard label="Assets Available" value={kpis.assets_available} tone="ok" />
             <KpiCard label="Assets Allocated" value={kpis.assets_allocated} tone="info" />
             <KpiCard label="Under Maintenance" value={kpis.under_maintenance} tone="warn" />
+            <KpiCard label="Maintenance Today" value={kpis.maintenance_today} tone="warn" hint="Open repair requests" />
             <KpiCard label="Active Bookings" value={kpis.active_bookings} tone="info" />
             <KpiCard label="Pending Transfers" value={kpis.pending_transfers} tone="warn" />
             <KpiCard label="Upcoming Returns" value={kpis.upcoming_returns} tone="default" />
