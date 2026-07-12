@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { RoleBadge } from './ui';
+import NotificationBell from './NotificationBell';
 
 const NAV = [
   { to: '/dashboard', label: 'Dashboard', icon: '▚' },
@@ -10,11 +11,13 @@ const NAV = [
   { to: '/bookings', label: 'Resource Booking', icon: '◷' },
   { to: '/maintenance', label: 'Maintenance', icon: '⚒' },
   { to: '/audit', label: 'Asset Audit', icon: '☑' },
+  { to: '/reports', label: 'Reports & Analytics', icon: '📊', managerOnly: true },
+  { to: '/activity', label: 'Activity Log', icon: '🕑', managerOnly: true },
   { to: '/organization', label: 'Organization Setup', icon: '⚙', adminOnly: true },
 ];
 
 export default function Layout() {
-  const { user, isAdmin, logout } = useAuth();
+  const { user, isAdmin, isManager, logout } = useAuth();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -30,12 +33,18 @@ export default function Layout() {
     .join('')
     .toUpperCase();
 
+  const visibleNav = NAV.filter(
+    (item) => (!item.adminOnly || isAdmin) && (!item.managerOnly || isManager)
+  );
+
   return (
     <div className="app-shell">
       {/* Mobile top bar */}
       <header className="topbar">
         <button className="hamburger" onClick={() => setMobileOpen(true)} aria-label="Open menu">☰</button>
         <div className="brand-mini"><span className="brand-mark sm">AF</span> AssetFlow</div>
+        <div className="topbar-spacer" />
+        <NotificationBell />
       </header>
 
       {mobileOpen && <div className="drawer-backdrop" onClick={() => setMobileOpen(false)} />}
@@ -47,11 +56,12 @@ export default function Layout() {
             <strong>AssetFlow</strong>
             <small>Asset & Resource ERP</small>
           </div>
+          <div className="brand-bell"><NotificationBell /></div>
           <button className="icon-btn drawer-close" onClick={() => setMobileOpen(false)} aria-label="Close menu">×</button>
         </div>
 
         <nav className="nav">
-          {NAV.filter((item) => !item.adminOnly || isAdmin).map((item) => (
+          {visibleNav.map((item) => (
             <NavLink key={item.to} to={item.to} className="nav-link" onClick={() => setMobileOpen(false)}>
               <span className="nav-icon">{item.icon}</span>
               {item.label}

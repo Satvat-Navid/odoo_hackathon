@@ -61,6 +61,9 @@ def asset_out(asset: models.Asset, db=None) -> dict:
         "location": asset.location,
         "status": asset.status,
         "shared_flag": asset.shared_flag,
+        "photo_url": asset.photo_url,
+        "documents": asset.documents,
+        "qr_value": asset.asset_tag,  # encoded client-side into a QR image
         "held_by": _active_holder(asset, db) if db is not None else None,
     }
 
@@ -71,6 +74,14 @@ def _is_overdue(alloc: models.Allocation) -> bool:
     return alloc.expected_return_date < date.today()
 
 
+def _holder_label(alloc: models.Allocation) -> "str | None":
+    if alloc.employee:
+        return alloc.employee.full_name
+    if alloc.department:
+        return f"Dept: {alloc.department.name}"
+    return None
+
+
 def allocation_out(alloc: models.Allocation) -> dict:
     return {
         "id": alloc.id,
@@ -79,6 +90,9 @@ def allocation_out(alloc: models.Allocation) -> dict:
         "asset_name": alloc.asset.name if alloc.asset else None,
         "employee_id": alloc.employee_id,
         "employee_name": alloc.employee.full_name if alloc.employee else None,
+        "department_id": alloc.department_id,
+        "department_name": alloc.department.name if alloc.department else None,
+        "holder": _holder_label(alloc),
         "allocated_date": alloc.allocated_date,
         "expected_return_date": alloc.expected_return_date,
         "returned_date": alloc.returned_date,
@@ -178,6 +192,30 @@ def audit_cycle_out(cycle: models.AuditCycle) -> dict:
         "created_at": cycle.created_at,
         "closed_at": cycle.closed_at,
         **_audit_counts(cycle),
+    }
+
+
+def notification_out(n: models.Notification) -> dict:
+    return {
+        "id": n.id,
+        "type": n.type,
+        "message": n.message,
+        "link": n.link,
+        "is_read": n.is_read,
+        "created_at": n.created_at,
+    }
+
+
+def activity_log_out(log: models.ActivityLog) -> dict:
+    return {
+        "id": log.id,
+        "actor_id": log.actor_id,
+        "actor_name": log.actor_name,
+        "action": log.action,
+        "entity_type": log.entity_type,
+        "entity_id": log.entity_id,
+        "summary": log.summary,
+        "created_at": log.created_at,
     }
 
 

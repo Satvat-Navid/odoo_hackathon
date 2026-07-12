@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 
 from .. import models, schemas
 from ..database import get_db
+from ..events import log_activity, notify
 from ..security import (
     ROLE_ADMIN,
     ROLE_ASSET_MANAGER,
@@ -153,7 +154,7 @@ def update_employee(
     emp_id: int,
     payload: schemas.EmployeeUpdate,
     db: Session = Depends(get_db),
-    _=Depends(require_admin),
+    current=Depends(require_admin),
 ):
     """The ONLY place roles are assigned — Admin promotes/updates directory entries."""
     emp = db.get(models.Employee, emp_id)
@@ -163,8 +164,15 @@ def update_employee(
     data = payload.model_dump(exclude_unset=True)
     if "role" in data and data["role"] not in ASSIGNABLE_ROLES:
         raise HTTPException(status_code=400, detail="Invalid role")
+    role_changed = "role" in data and data["role"] != emp.role
+    new_role = data.get("role")
     for key, value in data.items():
         setattr(emp, key, value)
+    if role_changed:
+        log_activity(db, current, "employee.role_changed", "employee", emp.id,
+                     f"{current.full_name} changed {emp.full_name}'s role to {new_role}")
+        notify(db, emp.id, "role",
+               f"Your role was updated to {new_role}.", "/dashboard")
     db.commit()
     db.refresh(emp)
     return employee_out(emp)

@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 from .. import models, schemas
 from ..database import get_db
+from ..events import log_activity, notify_admins
 from ..security import ROLE_ADMIN, get_current_user, require_admin
 from ..serializers import audit_cycle_detail, audit_cycle_out, audit_item_out
 
@@ -136,6 +137,16 @@ def update_item(
     item.notes = payload.notes
     item.checked_by_id = current.id
     item.checked_at = datetime.now(timezone.utc)
+
+    # A Missing/Damaged result is a discrepancy — alert the admins.
+    if payload.result in ("Missing", "Damaged"):
+        tag = item.asset.asset_tag if item.asset else f"#{item.asset_id}"
+        summary = f"{current.full_name} flagged {tag} as {payload.result} in '{cycle.name}'"
+        log_activity(db, current, "audit.discrepancy", "asset", item.asset_id, summary)
+        notify_admins(
+            db, "audit", f"Audit discrepancy: {tag} flagged {payload.result} in '{cycle.name}'.",
+            "/audit", f"discrepancy:{item.id}:{payload.result}",
+        )
     db.commit()
     db.refresh(item)
     return audit_item_out(item)

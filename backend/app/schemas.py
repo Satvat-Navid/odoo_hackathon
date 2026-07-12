@@ -22,6 +22,21 @@ class TokenResponse(BaseModel):
     user: "EmployeeOut"
 
 
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+
+class ForgotPasswordResponse(BaseModel):
+    """Demo-safe: the reset token is returned directly (would be emailed in prod)."""
+    message: str
+    reset_token: Optional[str] = None
+
+
+class ResetPasswordRequest(BaseModel):
+    token: str
+    new_password: str
+
+
 # --- Departments --------------------------------------------------------------
 class DepartmentCreate(BaseModel):
     name: str
@@ -110,6 +125,8 @@ class AssetCreate(BaseModel):
     condition: str = "Good"
     location: Optional[str] = None
     shared_flag: bool = False
+    photo_url: Optional[str] = None
+    documents: Optional[str] = None
 
 
 class AssetUpdate(BaseModel):
@@ -121,6 +138,8 @@ class AssetUpdate(BaseModel):
     location: Optional[str] = None
     status: Optional[str] = None
     shared_flag: Optional[bool] = None
+    photo_url: Optional[str] = None
+    documents: Optional[str] = None
 
 
 class AssetOut(BaseModel):
@@ -138,6 +157,9 @@ class AssetOut(BaseModel):
     location: Optional[str] = None
     status: str
     shared_flag: bool
+    photo_url: Optional[str] = None
+    documents: Optional[str] = None
+    qr_value: Optional[str] = None  # asset tag encoded for a QR code
     held_by: Optional[str] = None
 
     class Config:
@@ -147,7 +169,8 @@ class AssetOut(BaseModel):
 # --- Allocations & transfers --------------------------------------------------
 class AllocationCreate(BaseModel):
     asset_id: int
-    employee_id: int
+    employee_id: Optional[int] = None  # target an employee...
+    department_id: Optional[int] = None  # ...or a department (exactly one)
     expected_return_date: Optional[date] = None
 
 
@@ -161,8 +184,11 @@ class AllocationOut(BaseModel):
     asset_id: int
     asset_tag: Optional[str] = None
     asset_name: Optional[str] = None
-    employee_id: int
+    employee_id: Optional[int] = None
     employee_name: Optional[str] = None
+    department_id: Optional[int] = None
+    department_name: Optional[str] = None
+    holder: Optional[str] = None  # employee name or "Dept: X"
     allocated_date: Optional[datetime] = None
     expected_return_date: Optional[date] = None
     returned_date: Optional[datetime] = None
@@ -304,6 +330,44 @@ class AuditCycleOut(BaseModel):
     damaged: int = 0
     pending: int = 0
     progress_pct: int = 0
+
+    class Config:
+        from_attributes = True
+
+
+# --- Booking reschedule -------------------------------------------------------
+class BookingReschedule(BaseModel):
+    start_time: datetime
+    end_time: datetime
+
+
+# --- Notifications ------------------------------------------------------------
+class NotificationOut(BaseModel):
+    id: int
+    type: str
+    message: str
+    link: Optional[str] = None
+    is_read: bool
+    created_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+
+class UnreadCountOut(BaseModel):
+    unread: int
+
+
+# --- Activity log -------------------------------------------------------------
+class ActivityLogOut(BaseModel):
+    id: int
+    actor_id: Optional[int] = None
+    actor_name: str
+    action: str
+    entity_type: Optional[str] = None
+    entity_id: Optional[int] = None
+    summary: str
+    created_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True

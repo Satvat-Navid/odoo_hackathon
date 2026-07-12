@@ -42,6 +42,7 @@ class Employee(Base):
     department_id = Column(Integer, ForeignKey("departments.id"), nullable=True)
     role = Column(String(50), default="Employee")
     status = Column(String(20), default="Active")
+    reset_token = Column(String(100), nullable=True)  # demo password-reset token
 
     department = relationship("Department", foreign_keys=[department_id])
 
@@ -61,19 +62,23 @@ class Asset(Base):
     location = Column(String(80), nullable=True)
     status = Column(String(30), default="Available")
     shared_flag = Column(Boolean, default=False)
+    photo_url = Column(String(500), nullable=True)  # image URL for the asset
+    documents = Column(Text, nullable=True)  # freeform links/notes to attached docs
 
     category = relationship("AssetCategory")
     department = relationship("Department")
 
 
 class Allocation(Base):
-    """Records who holds an asset. status: Active | Returned."""
+    """Records who holds an asset. Target is an employee OR a department.
+    status: Active | Returned."""
 
     __tablename__ = "allocations"
 
     id = Column(Integer, primary_key=True, index=True)
     asset_id = Column(Integer, ForeignKey("assets.id"), nullable=False)
-    employee_id = Column(Integer, ForeignKey("employees.id"), nullable=False)
+    employee_id = Column(Integer, ForeignKey("employees.id"), nullable=True)
+    department_id = Column(Integer, ForeignKey("departments.id"), nullable=True)
     allocated_by_id = Column(Integer, ForeignKey("employees.id"), nullable=True)
     allocated_date = Column(DateTime, default=_utcnow)
     expected_return_date = Column(Date, nullable=True)
@@ -83,6 +88,7 @@ class Allocation(Base):
 
     asset = relationship("Asset")
     employee = relationship("Employee", foreign_keys=[employee_id])
+    department = relationship("Department", foreign_keys=[department_id])
     allocated_by = relationship("Employee", foreign_keys=[allocated_by_id])
 
 
@@ -130,6 +136,7 @@ class MaintenanceRequest(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     asset_id = Column(Integer, ForeignKey("assets.id"), nullable=True)
+    requester_id = Column(Integer, ForeignKey("employees.id"), nullable=True)
     requester_name = Column(String(120), nullable=False)
     description = Column(String(250), nullable=False)
     priority = Column(String(20), default="Medium")
@@ -197,3 +204,37 @@ class AuditItem(Base):
     cycle = relationship("AuditCycle", back_populates="items")
     asset = relationship("Asset")
     checked_by = relationship("Employee", foreign_keys=[checked_by_id])
+
+
+class ActivityLog(Base):
+    """Immutable audit trail of who did what. Written by the events helper."""
+
+    __tablename__ = "activity_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    actor_id = Column(Integer, ForeignKey("employees.id"), nullable=True)
+    actor_name = Column(String(120), nullable=False, default="System")
+    action = Column(String(60), nullable=False)  # short code, e.g. "asset.allocated"
+    entity_type = Column(String(40), nullable=True)  # e.g. "asset", "booking"
+    entity_id = Column(Integer, nullable=True)
+    summary = Column(String(300), nullable=False)  # human sentence
+    created_at = Column(DateTime, default=_utcnow, index=True)
+
+    actor = relationship("Employee", foreign_keys=[actor_id])
+
+
+class Notification(Base):
+    """A per-recipient message with optional deep-link into the frontend."""
+
+    __tablename__ = "notifications"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("employees.id"), nullable=False, index=True)
+    type = Column(String(40), nullable=False)  # e.g. "allocation", "transfer", "overdue"
+    message = Column(String(300), nullable=False)
+    link = Column(String(120), nullable=True)  # optional frontend path
+    is_read = Column(Boolean, default=False, index=True)
+    dedupe_key = Column(String(120), nullable=True, index=True)  # prevents duplicate alerts
+    created_at = Column(DateTime, default=_utcnow, index=True)
+
+    user = relationship("Employee", foreign_keys=[user_id])

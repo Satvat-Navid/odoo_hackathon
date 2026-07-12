@@ -11,6 +11,8 @@ from .api.bookings import router as bookings_router
 from .api.dashboard import router as dashboard_router
 from .api.maintenance import router as maintenance_router
 from .api.audit import router as audit_router
+from .api.notifications import router as notifications_router
+from .api.reports import router as reports_router
 
 Base.metadata.create_all(bind=engine)
 
@@ -36,6 +38,8 @@ app.include_router(bookings_router)
 app.include_router(dashboard_router)
 app.include_router(maintenance_router)
 app.include_router(audit_router)
+app.include_router(notifications_router)
+app.include_router(reports_router)
 
 
 @app.get("/health")

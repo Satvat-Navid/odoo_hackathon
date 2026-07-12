@@ -18,6 +18,7 @@ export default function AssetsPage() {
   const [error, setError] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [history, setHistory] = useState(null);
+  const [details, setDetails] = useState(null);
 
   const load = () => fetchAssets(filters).then(setAssets).catch((e) => setError(e.message));
   useEffect(() => { load(); }, [filters]);
@@ -80,6 +81,7 @@ export default function AssetsPage() {
                   <td>{a.held_by || '—'}</td>
                   <td><Badge value={a.status} /></td>
                   <td className="cell-actions">
+                    <button className="btn btn-outline btn-sm" onClick={() => setDetails(a)}>Details</button>
                     <button className="btn btn-outline btn-sm" onClick={() => openHistory(a)}>History</button>
                     {isManager && <button className="btn btn-danger btn-sm" onClick={() => remove(a)}>Delete</button>}
                   </td>
@@ -136,7 +138,49 @@ export default function AssetsPage() {
           )}
         </Modal>
       )}
+
+      {details && <DetailsModal asset={details} onClose={() => setDetails(null)} />}
     </div>
+  );
+}
+
+function DetailsModal({ asset, onClose }) {
+  const qrValue = asset.qr_value || asset.asset_tag;
+  // Dependency-free QR: encode the asset tag via a public QR image endpoint.
+  const qrSrc = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(qrValue)}`;
+  return (
+    <Modal title={`${asset.asset_tag} — ${asset.name}`} onClose={onClose}>
+      <div className="asset-details">
+        <div className="asset-media">
+          {asset.photo_url ? (
+            <img className="asset-photo" src={asset.photo_url} alt={asset.name}
+              onError={(e) => { e.target.style.display = 'none'; }} />
+          ) : (
+            <div className="asset-photo placeholder">No photo</div>
+          )}
+          <div className="asset-qr">
+            <img src={qrSrc} alt={`QR for ${qrValue}`} width="120" height="120"
+              onError={(e) => { e.target.style.display = 'none'; }} />
+            <code>{qrValue}</code>
+          </div>
+        </div>
+        <dl className="detail-list">
+          <div><dt>Category</dt><dd>{asset.category_name || '—'}</dd></div>
+          <div><dt>Department</dt><dd>{asset.department_name || '—'}</dd></div>
+          <div><dt>Serial</dt><dd>{asset.serial_number || '—'}</dd></div>
+          <div><dt>Location</dt><dd>{asset.location || '—'}</dd></div>
+          <div><dt>Condition</dt><dd><Badge value={asset.condition} /></dd></div>
+          <div><dt>Status</dt><dd><Badge value={asset.status} /></dd></div>
+          <div><dt>Held by</dt><dd>{asset.held_by || '—'}</dd></div>
+        </dl>
+        {asset.documents && (
+          <>
+            <h4 className="history-section">Attached Documents</h4>
+            <p className="doc-text">{asset.documents}</p>
+          </>
+        )}
+      </div>
+    </Modal>
   );
 }
 
@@ -144,6 +188,7 @@ function RegisterModal({ categories, departments, onClose, onSaved, onError }) {
   const [form, setForm] = useState({
     name: '', category_id: '', department_id: '', serial_number: '', acquisition_date: '',
     acquisition_cost: '', condition: 'Good', location: '', shared_flag: false,
+    photo_url: '', documents: '',
   });
 
   const save = async (e) => {
@@ -159,6 +204,8 @@ function RegisterModal({ categories, departments, onClose, onSaved, onError }) {
         condition: form.condition,
         location: form.location || null,
         shared_flag: form.shared_flag,
+        photo_url: form.photo_url || null,
+        documents: form.documents || null,
       });
       onSaved();
     } catch (err) { onError(err.message); }
@@ -197,8 +244,12 @@ function RegisterModal({ categories, departments, onClose, onSaved, onError }) {
           <input type="checkbox" checked={form.shared_flag} onChange={(e) => setForm({ ...form, shared_flag: e.target.checked })} />
           <span>Shared / bookable resource</span>
         </label>
+        <label className="field"><span>Photo URL</span>
+          <input value={form.photo_url} onChange={(e) => setForm({ ...form, photo_url: e.target.value })} placeholder="https://…/asset.jpg" /></label>
+        <label className="field"><span>Documents (links / notes)</span>
+          <textarea rows="2" value={form.documents} onChange={(e) => setForm({ ...form, documents: e.target.value })} placeholder="Warranty card, invoice link, manual URL…" /></label>
       </form>
-      <p className="hint-text">Asset Tag is auto-generated (e.g. AF-0007).</p>
+      <p className="hint-text">Asset Tag is auto-generated (e.g. AF-0007). A QR code of the tag is shown in the asset's Details.</p>
     </Modal>
   );
 }

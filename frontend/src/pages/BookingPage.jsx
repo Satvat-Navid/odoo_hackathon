@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { cancelBooking, createBooking, fetchAssets, fetchBookings } from '../services/api';
+import { cancelBooking, createBooking, fetchAssets, fetchBookings, rescheduleBooking } from '../services/api';
 import PageHeader from '../components/PageHeader';
 import { Badge, Banner, EmptyState, Modal } from '../components/ui';
 
@@ -10,6 +10,7 @@ export default function BookingPage() {
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [open, setOpen] = useState(false);
+  const [rescheduling, setRescheduling] = useState(null);
 
   const load = () => fetchBookings(resourceFilter).then(setBookings).catch((e) => setError(e.message));
   useEffect(() => { load(); }, [resourceFilter]);
@@ -58,10 +59,13 @@ export default function BookingPage() {
                     <Badge value={b.status} />
                   </div>
                   {b.status === 'Upcoming' && (
-                    <button className="btn btn-ghost btn-sm" onClick={async () => {
-                      try { await cancelBooking(b.id); setNotice('Booking cancelled.'); load(); }
-                      catch (e) { setError(e.message); }
-                    }}>Cancel</button>
+                    <div className="row-actions">
+                      <button className="btn btn-outline btn-sm" onClick={() => setRescheduling(b)}>Reschedule</button>
+                      <button className="btn btn-ghost btn-sm" onClick={async () => {
+                        try { await cancelBooking(b.id); setNotice('Booking cancelled.'); load(); }
+                        catch (e) { setError(e.message); }
+                      }}>Cancel</button>
+                    </div>
                   )}
                 </div>
               ))}
@@ -76,7 +80,53 @@ export default function BookingPage() {
           onDone={() => { setOpen(false); setNotice('Booking confirmed.'); load(); }}
           onError={setError} />
       )}
+
+      {rescheduling && (
+        <RescheduleModal booking={rescheduling}
+          onClose={() => setRescheduling(null)}
+          onDone={() => { setRescheduling(null); setNotice('Booking rescheduled.'); load(); }}
+          onError={setError} />
+      )}
     </div>
+  );
+}
+
+function toLocalInput(iso) {
+  // Convert an ISO timestamp to a value usable by <input type="datetime-local">.
+  const d = new Date(iso);
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function RescheduleModal({ booking, onClose, onDone, onError }) {
+  const [form, setForm] = useState({
+    start_time: toLocalInput(booking.start_time),
+    end_time: toLocalInput(booking.end_time),
+  });
+
+  const save = async (e) => {
+    e.preventDefault();
+    try {
+      await rescheduleBooking(booking.id, {
+        start_time: new Date(form.start_time).toISOString(),
+        end_time: new Date(form.end_time).toISOString(),
+      });
+      onDone();
+    } catch (err) { onError(err.message); }
+  };
+
+  return (
+    <Modal title={`Reschedule — ${booking.resource_name}`} onClose={onClose}
+      footer={<><button className="btn btn-ghost" onClick={onClose}>Cancel</button>
+        <button className="btn btn-primary" form="resched-form" type="submit">Save New Time</button></>}>
+      <form id="resched-form" className="form-grid" onSubmit={save}>
+        <label className="field"><span>Start</span>
+          <input type="datetime-local" required value={form.start_time} onChange={(e) => setForm({ ...form, start_time: e.target.value })} /></label>
+        <label className="field"><span>End</span>
+          <input type="datetime-local" required value={form.end_time} onChange={(e) => setForm({ ...form, end_time: e.target.value })} /></label>
+      </form>
+      <p className="hint-text">The same overlap check applies — the slot can't clash with another booking of this resource.</p>
+    </Modal>
   );
 }
 

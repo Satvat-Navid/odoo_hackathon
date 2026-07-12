@@ -9,13 +9,16 @@ import AllocationPage from './pages/AllocationPage';
 import BookingPage from './pages/BookingPage';
 import MaintenancePage from './pages/MaintenancePage';
 import AuditPage from './pages/AuditPage';
+import ReportsPage from './pages/ReportsPage';
+import ActivityPage from './pages/ActivityPage';
 
-function ProtectedRoute({ children, adminOnly = false }) {
-  const { isAuthenticated, isAdmin, loading } = useAuth();
+function ProtectedRoute({ children, adminOnly = false, managerOnly = false }) {
+  const { isAuthenticated, isAdmin, isManager, loading } = useAuth();
 
   if (loading) return <div className="app-loading">Loading…</div>;
   if (!isAuthenticated) return <Navigate to="/login" replace />;
   if (adminOnly && !isAdmin) return <Navigate to="/dashboard" replace />;
+  if (managerOnly && !isManager) return <Navigate to="/dashboard" replace />;
   return children;
 }
 
@@ -38,6 +41,22 @@ export default function App() {
             <Route path="/bookings" element={<BookingPage />} />
             <Route path="/maintenance" element={<MaintenancePage />} />
             <Route path="/audit" element={<AuditPage />} />
+            <Route
+              path="/reports"
+              element={
+                <ProtectedRoute managerOnly>
+                  <ReportsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/activity"
+              element={
+                <ProtectedRoute managerOnly>
+                  <ActivityPage />
+                </ProtectedRoute>
+              }
+            />
             <Route
               path="/organization"
               element={

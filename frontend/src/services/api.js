@@ -39,6 +39,10 @@ export const login = (email, password) =>
 export const register = (full_name, email, password) =>
   request('/auth/register', { method: 'POST', body: { full_name, email, password }, auth: false });
 export const fetchMe = () => request('/auth/me');
+export const forgotPassword = (email) =>
+  request('/auth/forgot-password', { method: 'POST', body: { email }, auth: false });
+export const resetPassword = (token, new_password) =>
+  request('/auth/reset-password', { method: 'POST', body: { token, new_password }, auth: false });
 
 // --- Dashboard ----------------------------------------------------------------
 export const fetchKpis = () => request('/dashboard/kpis');
@@ -83,6 +87,7 @@ export const rejectTransfer = (id) => request(`/transfers/${id}/reject`, { metho
 // --- Bookings -----------------------------------------------------------------
 export const fetchBookings = (resource) => request(`/bookings${resource ? `?resource=${encodeURIComponent(resource)}` : ''}`);
 export const createBooking = (payload) => request('/bookings', { method: 'POST', body: payload });
+export const rescheduleBooking = (id, payload) => request(`/bookings/${id}/reschedule`, { method: 'POST', body: payload });
 export const cancelBooking = (id) => request(`/bookings/${id}/cancel`, { method: 'POST' });
 
 // --- Maintenance --------------------------------------------------------------
@@ -103,3 +108,24 @@ export const assignAuditors = (id, auditor_ids) => request(`/audit-cycles/${id}/
 export const updateAuditItem = (id, payload) => request(`/audit-items/${id}`, { method: 'PATCH', body: payload });
 export const fetchAuditDiscrepancies = (id) => request(`/audit-cycles/${id}/discrepancies`);
 export const closeAuditCycle = (id) => request(`/audit-cycles/${id}/close`, { method: 'POST' });
+
+// --- Notifications ------------------------------------------------------------
+export const fetchNotifications = (unreadOnly = false) =>
+  request(`/notifications${unreadOnly ? '?unread_only=true' : ''}`);
+export const fetchUnreadCount = () => request('/notifications/unread-count');
+export const markNotificationRead = (id) => request(`/notifications/${id}/read`, { method: 'POST' });
+export const markAllNotificationsRead = () => request('/notifications/read-all', { method: 'POST' });
+
+// --- Activity log -------------------------------------------------------------
+export const fetchActivityLogs = (params = {}) => {
+  const qs = new URLSearchParams(Object.entries(params).filter(([, v]) => v !== '' && v != null)).toString();
+  return request(`/activity-logs${qs ? `?${qs}` : ''}`);
+};
+
+// --- Reports & analytics ------------------------------------------------------
+export const fetchReportSummary = () => request('/reports/summary');
+export const fetchAssetUtilization = () => request('/reports/asset-utilization');
+export const fetchMaintenanceFrequency = () => request('/reports/maintenance-frequency');
+export const fetchDueMaintenance = () => request('/reports/due-maintenance');
+export const fetchDepartmentAllocation = () => request('/reports/department-allocation');
+export const fetchBookingHeatmap = () => request('/reports/booking-heatmap');

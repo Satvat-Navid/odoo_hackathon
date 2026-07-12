@@ -1,3 +1,5 @@
+import secrets
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
@@ -51,3 +53,36 @@ def login(payload: schemas.LoginRequest, db: Session = Depends(get_db)):
 @router.get("/me", response_model=schemas.EmployeeOut)
 def me(current_user: models.Employee = Depends(get_current_user)):
     return employee_out(current_user)
+
+
+@router.post("/forgot-password", response_model=schemas.ForgotPasswordResponse)
+def forgot_password(payload: schemas.ForgotPasswordRequest, db: Session = Depends(get_db)):
+    """Issue a one-time reset token. Demo-safe: the token is returned in the
+    response (in production it would be emailed). Always responds 200 so the
+    endpoint can't be used to enumerate registered emails."""
+    employee = db.query(models.Employee).filter(models.Employee.email == payload.email).first()
+    generic = "If that email exists, a reset token has been generated."
+    if not employee:
+        return {"message": generic, "reset_token": None}
+    token = secrets.token_urlsafe(16)
+    employee.reset_token = token
+    db.commit()
+    return {"message": generic, "reset_token": token}
+
+
+@router.post("/reset-password", response_model=schemas.EmployeeOut)
+def reset_password(payload: schemas.ResetPasswordRequest, db: Session = Depends(get_db)):
+    employee = (
+        db.query(models.Employee)
+        .filter(models.Employee.reset_token == payload.token)
+        .first()
+    )
+    if not employee or not payload.token:
+        raise HTTPException(status_code=400, detail="Invalid or expired reset token")
+    if len(payload.new_password) < 6:
+        raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
+    employee.password_hash = hash_password(payload.new_password)
+    employee.reset_token = None  # single-use
+    db.commit()
+    db.refresh(employee)
+    return employee_out(employee)

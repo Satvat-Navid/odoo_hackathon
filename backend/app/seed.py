@@ -110,16 +110,22 @@ def seed(db: Session) -> None:
 
     # Maintenance requests in different workflow states
     db.add(models.MaintenanceRequest(
-        asset_id=assets[2].id, requester_name=meera.full_name,
+        asset_id=assets[2].id, requester_id=meera.id, requester_name=meera.full_name,
         description="Chair hydraulics failing, seat drops randomly.",
         priority="High", status="Pending",
     ))
     projector = assets[5]  # Approved -> asset goes Under Maintenance
     projector.status = "Under Maintenance"
     db.add(models.MaintenanceRequest(
-        asset_id=projector.id, requester_name=raj.full_name,
+        asset_id=projector.id, requester_id=raj.id, requester_name=raj.full_name,
         description="Projector lamp flickering during presentations.",
         priority="Medium", status="Approved", approved_by_id=priya.id,
+    ))
+    # A couple of resolved repairs on the chair so it trends as "frequent repairs".
+    db.add(models.MaintenanceRequest(
+        asset_id=assets[2].id, requester_id=meera.id, requester_name=meera.full_name,
+        description="Armrest cracked.", priority="Low", status="Resolved",
+        approved_by_id=priya.id, resolution_notes="Armrest replaced.",
     ))
 
     # An Open audit cycle scoped to IT, with an assigned auditor + generated items
@@ -134,5 +140,64 @@ def seed(db: Session) -> None:
     for asset in assets:
         if asset.department_id == it.id:
             db.add(models.AuditItem(cycle_id=cycle.id, asset_id=asset.id, result="Pending"))
+
+    # --- Historical data so Reports & Analytics render non-empty ---------------
+    now = datetime.now(timezone.utc)
+    dell = assets[0]
+    # Two completed allocations on the Dell (utilization history).
+    db.add(models.Allocation(
+        asset_id=dell.id, employee_id=meera.id, allocated_by_id=admin.id,
+        allocated_date=now - timedelta(days=40), returned_date=now - timedelta(days=10),
+        expected_return_date=(date.today() - timedelta(days=12)), status="Returned",
+        checkin_notes="Returned in good condition.",
+    ))
+    db.add(models.Allocation(
+        asset_id=dell.id, employee_id=raj.id, allocated_by_id=priya.id,
+        allocated_date=now - timedelta(days=8), returned_date=now - timedelta(days=3),
+        expected_return_date=(date.today() - timedelta(days=4)), status="Returned",
+    ))
+
+    # A live allocation targeting a DEPARTMENT (not an employee).
+    van = assets[3]
+    van.status = "Allocated"
+    db.add(models.Allocation(
+        asset_id=van.id, department_id=ops.id, allocated_by_id=admin.id,
+        allocated_date=now - timedelta(days=5),
+        expected_return_date=(date.today() + timedelta(days=20)), status="Active",
+    ))
+
+    # Historical bookings spread across weekdays/hours for the heatmap.
+    room, projector_asset = assets[4], assets[5]
+    booking_slots = [
+        (room, "Meeting Room B2", raj, 6, 9), (room, "Meeting Room B2", meera, 6, 14),
+        (room, "Meeting Room B2", priya, 4, 10), (room, "Meeting Room B2", raj, 3, 11),
+        (projector_asset, "Projector Epson X50", meera, 2, 15),
+        (room, "Meeting Room B2", meera, 1, 9),
+    ]
+    for asset, name, who, days_ago, hour in booking_slots:
+        start = (now - timedelta(days=days_ago)).replace(hour=hour, minute=0, second=0, microsecond=0)
+        db.add(models.Booking(
+            asset_id=asset.id, resource_name=name, booked_by_id=who.id, booked_by=who.full_name,
+            start_time=start, end_time=start + timedelta(hours=1),
+            purpose="Team session", status="Completed",
+        ))
+
+    # A couple of seed notifications + activity-log entries.
+    db.add_all([
+        models.Notification(user_id=meera.id, type="allocation",
+                            message="Welcome to AssetFlow! Assets assigned to you appear here.",
+                            link="/allocations", is_read=False),
+        models.Notification(user_id=priya.id, type="maintenance",
+                            message="Projector Epson X50 is awaiting a technician.",
+                            link="/maintenance", is_read=False),
+    ])
+    db.add_all([
+        models.ActivityLog(actor_id=admin.id, actor_name=admin.full_name,
+                           action="asset.allocated", entity_type="asset", entity_id=van.id,
+                           summary=f"{admin.full_name} allocated {van.asset_tag} to Dept: Operations"),
+        models.ActivityLog(actor_id=priya.id, actor_name=priya.full_name,
+                           action="maintenance.approved", entity_type="asset", entity_id=projector.id,
+                           summary=f"{priya.full_name} approved maintenance for {projector.asset_tag}"),
+    ])
 
     db.commit()

@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 
 from .. import models, schemas
 from ..database import get_db
+from ..events import log_activity, notify
 from ..security import get_current_user, require_manager
 from ..serializers import maintenance_out
 
@@ -56,6 +57,7 @@ def raise_request(
         raise HTTPException(status_code=404, detail="Asset not found")
     mr = models.MaintenanceRequest(
         asset_id=asset.id,
+        requester_id=current.id,
         requester_name=current.full_name,
         description=payload.description,
         priority=payload.priority,
@@ -63,6 +65,10 @@ def raise_request(
         status="Pending",
     )
     db.add(mr)
+    log_activity(
+        db, current, "maintenance.raised", "asset", asset.id,
+        f"{current.full_name} raised a maintenance request for {asset.asset_tag}",
+    )
     db.commit()
     db.refresh(mr)
     return maintenance_out(mr)
@@ -83,6 +89,11 @@ def approve_request(
     mr.approved_by_id = current.id
     if mr.asset:
         mr.asset.status = "Under Maintenance"
+    tag = mr.asset.asset_tag if mr.asset else f"#{mr.asset_id}"
+    log_activity(db, current, "maintenance.approved", "asset", mr.asset_id,
+                 f"{current.full_name} approved maintenance for {tag}")
+    notify(db, mr.requester_id, "maintenance",
+           f"Your maintenance request for {tag} was approved.", "/maintenance")
     db.commit()
     db.refresh(mr)
     return maintenance_out(mr)
@@ -96,6 +107,11 @@ def reject_request(
     _require_status(mr, "Pending")
     mr.status = "Rejected"
     mr.approved_by_id = current.id
+    tag = mr.asset.asset_tag if mr.asset else f"#{mr.asset_id}"
+    log_activity(db, current, "maintenance.rejected", "asset", mr.asset_id,
+                 f"{current.full_name} rejected maintenance for {tag}")
+    notify(db, mr.requester_id, "maintenance",
+           f"Your maintenance request for {tag} was rejected.", "/maintenance")
     db.commit()
     db.refresh(mr)
     return maintenance_out(mr)
@@ -142,6 +158,11 @@ def resolve_request(
     mr.resolution_notes = payload.resolution_notes
     if mr.asset:
         mr.asset.status = "Available"
+    tag = mr.asset.asset_tag if mr.asset else f"#{mr.asset_id}"
+    log_activity(db, current, "maintenance.resolved", "asset", mr.asset_id,
+                 f"{current.full_name} resolved maintenance for {tag}")
+    notify(db, mr.requester_id, "maintenance",
+           f"Maintenance for {tag} has been resolved.", "/maintenance")
     db.commit()
     db.refresh(mr)
     return maintenance_out(mr)

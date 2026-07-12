@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import {
-  allocateAsset, approveTransfer, fetchAllocations, fetchAssets, fetchEmployees,
+  allocateAsset, approveTransfer, fetchAllocations, fetchAssets, fetchDepartments, fetchEmployees,
   fetchTransfers, rejectTransfer, requestTransfer, returnAllocation,
 } from '../services/api';
 import { useAuth } from '../context/AuthContext';
@@ -13,6 +13,7 @@ export default function AllocationPage() {
   const [transfers, setTransfers] = useState([]);
   const [assets, setAssets] = useState([]);
   const [employees, setEmployees] = useState([]);
+  const [departments, setDepartments] = useState([]);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [allocOpen, setAllocOpen] = useState(false);
@@ -27,6 +28,7 @@ export default function AllocationPage() {
     load();
     fetchAssets().then(setAssets).catch(() => {});
     fetchEmployees().then(setEmployees).catch(() => {});
+    fetchDepartments().then(setDepartments).catch(() => {});
   }, []);
 
   const employeeName = (id) => employees.find((e) => e.id === id)?.full_name || `#${id}`;
@@ -59,7 +61,7 @@ export default function AllocationPage() {
               {allocations.map((a) => (
                 <tr key={a.id} className={a.overdue ? 'row-danger' : ''}>
                   <td><strong>{a.asset_tag}</strong> {a.asset_name}</td>
-                  <td>{a.employee_name}</td>
+                  <td>{a.holder || '—'}{a.department_id ? <span className="tag-mini">dept</span> : null}</td>
                   <td>{a.allocated_date ? new Date(a.allocated_date).toLocaleDateString() : '—'}</td>
                   <td>{a.expected_return_date || '—'} {a.overdue && <Badge value="Overdue" />}</td>
                   <td>{isManager && <button className="btn btn-outline btn-sm" onClick={() => setReturning(a)}>Return</button>}</td>
@@ -106,6 +108,7 @@ export default function AllocationPage() {
         <AllocateModal
           assets={assets.filter((a) => a.status === 'Available')}
           employees={employees}
+          departments={departments}
           onClose={() => setAllocOpen(false)}
           onDone={() => { setAllocOpen(false); load(); fetchAssets().then(setAssets); }}
           onConflict={(assetId) => { setAllocOpen(false); setTransferFor(assets.find((a) => a.id === assetId)); }}
@@ -127,15 +130,17 @@ export default function AllocationPage() {
   );
 }
 
-function AllocateModal({ assets, employees, onClose, onDone, onConflict, onError }) {
-  const [form, setForm] = useState({ asset_id: '', employee_id: '', expected_return_date: '' });
+function AllocateModal({ assets, employees, departments, onClose, onDone, onConflict, onError }) {
+  const [form, setForm] = useState({ asset_id: '', target_type: 'employee', employee_id: '', department_id: '', expected_return_date: '' });
 
   const save = async (e) => {
     e.preventDefault();
+    const toEmployee = form.target_type === 'employee';
     try {
       await allocateAsset({
         asset_id: Number(form.asset_id),
-        employee_id: Number(form.employee_id),
+        employee_id: toEmployee ? Number(form.employee_id) : null,
+        department_id: toEmployee ? null : Number(form.department_id),
         expected_return_date: form.expected_return_date || null,
       });
       onDone();
@@ -160,11 +165,24 @@ function AllocateModal({ assets, employees, onClose, onDone, onConflict, onError
             <option value="">— select —</option>
             {assets.map((a) => <option key={a.id} value={a.id}>{a.asset_tag} · {a.name}</option>)}
           </select></label>
-        <label className="field"><span>Assign to Employee</span>
-          <select required value={form.employee_id} onChange={(e) => setForm({ ...form, employee_id: e.target.value })}>
-            <option value="">— select —</option>
-            {employees.map((emp) => <option key={emp.id} value={emp.id}>{emp.full_name}</option>)}
+        <label className="field"><span>Allocate to</span>
+          <select value={form.target_type} onChange={(e) => setForm({ ...form, target_type: e.target.value, employee_id: '', department_id: '' })}>
+            <option value="employee">An Employee</option>
+            <option value="department">A Department</option>
           </select></label>
+        {form.target_type === 'employee' ? (
+          <label className="field"><span>Assign to Employee</span>
+            <select required value={form.employee_id} onChange={(e) => setForm({ ...form, employee_id: e.target.value })}>
+              <option value="">— select —</option>
+              {employees.map((emp) => <option key={emp.id} value={emp.id}>{emp.full_name}</option>)}
+            </select></label>
+        ) : (
+          <label className="field"><span>Assign to Department</span>
+            <select required value={form.department_id} onChange={(e) => setForm({ ...form, department_id: e.target.value })}>
+              <option value="">— select —</option>
+              {departments.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
+            </select></label>
+        )}
         <label className="field"><span>Expected Return Date (optional)</span>
           <input type="date" value={form.expected_return_date} onChange={(e) => setForm({ ...form, expected_return_date: e.target.value })} /></label>
       </form>
